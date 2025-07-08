@@ -38,7 +38,7 @@ export class Game {
     private pencilPoints: { x: number; y: number }[] = [];
 
 
-    constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
+    constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket ) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d")!;
         this.existingShapes = [];
@@ -48,6 +48,7 @@ export class Game {
         this.init();
         this.initHandlers();
         this.initMouseHandlers();
+
     }
 
     destroy() {
@@ -181,6 +182,7 @@ export class Game {
             }),
             roomId: this.roomId
         }))
+        
     }
     mouseMoveHandler = (e: MouseEvent) => {
         if (this.clicked) {
@@ -236,4 +238,5 @@ export class Game {
         this.canvas.addEventListener("mousemove", this.mouseMoveHandler)
 
     }
+
 }

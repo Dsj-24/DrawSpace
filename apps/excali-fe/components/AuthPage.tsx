@@ -213,7 +213,15 @@ export function AuthPage({ isSignin }:  {
                 {/* Additional Info */}
                 <div className="text-center mt-6">
                     <p className="text-xs text-gray-500">
-                        By continuing, you agree to our Terms of Service and Privacy Policy
+                        {isSignin
+                            ? "Don't have an account? "
+                            : 'Already have an account? '}
+                        <a
+                            href={isSignin ? '/signup' : '/signin'}
+                            className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                        >
+                            {isSignin ? 'Sign Up' : 'Sign In'}
+                        </a>
                     </p>
                 </div>
             </div>

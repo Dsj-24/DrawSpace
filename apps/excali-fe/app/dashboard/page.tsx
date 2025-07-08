@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { PenTool, Users, Zap, ArrowRight, Plus } from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import axios from 'axios';
@@ -10,6 +10,16 @@ function Dashboard() {
     const [isJoinHovered, setIsJoinHovered] = useState(false);
     const [isCreateHovered, setIsCreateHovered] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    router.push('/signin'); // or wherever your login page is
+  }
+
+  // Optional: verify token with backend here, if needed
+}, []);
 
 const handleJoinSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

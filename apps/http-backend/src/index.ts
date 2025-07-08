@@ -155,4 +155,16 @@ app.get("/room/:slug", async (req, res) => {
     })
 })
 
+app.get("/users/:roomId", async (req: Request, res: Response) => {
+  const roomId = Number(req.params.roomId);
+
+  const users = await prismaClient.user.findMany({
+    where: { rooms: { some: { id: roomId } } },
+    select: { id: true, name: true }
+  });
+
+  res.json(users);
+});
+
+
 app.listen(3001);
