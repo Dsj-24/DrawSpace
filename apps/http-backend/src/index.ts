@@ -127,11 +127,17 @@ app.get("/chats/:roomId", async (req, res) => {
             orderBy: {
                 id: "desc"
             },
+            include: {
+                user: {
+                    select: { name: true }
+                }
+            },
             take: 50
         });
+        
 
         res.json({
-            messages
+            messages,
         })
     } catch(e) {
         console.log(e);

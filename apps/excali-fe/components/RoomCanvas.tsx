@@ -8,8 +8,14 @@ import { Canvas } from "./Canvas";
 export function RoomCanvas({roomId}: {roomId: string}) {
     const [socket, setSocket] = useState<WebSocket | null>(null);
 
+
     useEffect(() => {
-        const ws = new WebSocket(`${WS_URL}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkZWQ3MmMwOS01YjFkLTQ0OWItYmI1MS01YjllNTgwMGJhYmUiLCJpYXQiOjE3NDk5MjU5NTh9.mdlKDFXhEhbAMBqcFlOBC_UQ4A-XuHJqN0ix1rq-6SA`)
+        const token = localStorage.getItem("token"); 
+    if (!token) {
+      console.error("No auth token found – make sure you’re logged in!");
+      return;
+    }
+        const ws = new WebSocket(`${WS_URL}?token=${token}`)
 
         ws.onopen = () => {
             setSocket(ws);

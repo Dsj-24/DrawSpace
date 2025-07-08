@@ -7,6 +7,7 @@ import { Circle, Pencil, PenTool, RectangleHorizontalIcon, TriangleIcon, TypeIco
 import { Game } from "../draw/Game";
 import axios from "axios";
 import { prismaClient } from '@repo/db/client';
+import { BACKEND_URL } from "@repo/backend-common/config";
 
 export type Tool = "circle" | "rect" | "pencil" | "triangle";
 
@@ -22,6 +23,12 @@ export function Canvas({
     const [selectedTool, setSelectedTool] = useState<Tool>("circle");
     const [roomLeader, setRoomLeader] = useState<{ id: string; name: string } | null>(null);
     const [roomUsers, setRoomUsers] = useState<{ id: string; name: string }[]>([]);
+      const [logs, setLogs] = useState<{ userName: string; shapeType: string }[]>([]);
+
+  // NEW: fetch logs on mount/roomId change
+  useEffect(() => {
+    getUserLogs(roomId).then(setLogs).catch(console.error);
+  });
 
     useEffect(() => {
         game?.setTool(selectedTool);
@@ -64,10 +71,38 @@ useEffect(() => {
 
     return <div style={{
         height: "100vh",
-        overflow: "hidden"
+        overflow: "hidden",position: "relative" 
     }}>
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight}></canvas>
         <Topbar setSelectedTool={setSelectedTool} selectedTool={selectedTool}  roomLeader={roomLeader} roomUsers={roomUsers} />
+        {/* NEW: the right-side LOGS panel */}
+      <div
+        style={{
+          position: "fixed",
+          top: "10%",
+          right: 10,
+          width: "220px",
+          maxHeight: "80%",
+          overflowY: "auto",
+          backgroundColor: "rgba(0,0,0,0.7)",
+          color: "#fff",
+          padding: "12px",
+          borderRadius: "8px",
+          zIndex: 20
+        }}
+      >
+        <h3 style={{ marginBottom: "8px", textAlign: "center" }}>LOGS</h3>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {logs.length > 0
+            ? logs.map((l, i) => (
+                <li key={i} style={{ marginBottom: "6px" }}>
+                  <strong>{l.userName}</strong> drew a <em>{l.shapeType}</em>
+                </li>
+              ))
+            : <li><em>No shapes yet…</em></li>
+          }
+        </ul>
+      </div>
     </div>
 }
 
@@ -132,6 +167,19 @@ function Topbar({
       </div>
     </div>
   );
+}
+
+export async function getUserLogs(roomId: string) {
+  const { data } = await axios.get(`${BACKEND_URL}/chats/${roomId}`);
+  // data.messages: Array< { message: string; user: { name: string } } >
+  
+  return data.messages.map((m: any) => {
+    const parsed = JSON.parse(m.message);
+    return {
+      userName: m.user.name,
+      shapeType: parsed.shape.type
+    };
+  });
 }
     
     

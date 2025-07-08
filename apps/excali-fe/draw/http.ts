@@ -1,4 +1,5 @@
 import { BACKEND_URL } from "@repo/backend-common/config";
+import { prismaClient } from "@repo/db/client";
 import axios from "axios";
 
 export async function getExistingShapes(roomId: string) {
@@ -12,3 +13,4 @@ export async function getExistingShapes(roomId: string) {
 
     return shapes;
 }
+
