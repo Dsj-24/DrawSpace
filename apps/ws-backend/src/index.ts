@@ -99,6 +99,34 @@ wss.on('connection', function connection(ws, request) {
       })
     }
 
+    if (parsedData.type === "join_room" || parsedData.type === "leave_room") {
+  const roomId = parsedData.roomId;
+
+  // 1. figure out which userIds are now in this room
+  const memberIds = users
+    .filter(u => u.rooms.includes(roomId))
+    .map(u => u.userId);
+
+  // 2. fetch their names from your users table
+  const members: { id: string; name: string }[] =
+    await prismaClient.user.findMany({
+      where: { id: { in: memberIds } },
+      select: { id: true, name: true },
+    });
+
+  // 3. push the updated list to everyone in that room
+  users.forEach(u => {
+    if (u.rooms.includes(roomId)) {
+      u.ws.send(
+        JSON.stringify({
+          type: "room_users",
+          users: members,
+        })
+      );
+    }
+  });
+}
+
   });
 
 });

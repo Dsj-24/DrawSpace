@@ -22,8 +22,19 @@ export function Canvas({
     const [game, setGame] = useState<Game>();
     const [selectedTool, setSelectedTool] = useState<Tool>("circle");
     const [roomLeader, setRoomLeader] = useState<{ id: string; name: string } | null>(null);
-    const [roomUsers, setRoomUsers] = useState<{ id: string; name: string }[]>([]);
-      const [logs, setLogs] = useState<{ userName: string; shapeType: string }[]>([]);
+    const [logs, setLogs] = useState<{ userName: string; shapeType: string }[]>([]);
+     const [roomUsers, setRoomUsers] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    socket.addEventListener("message", (evt) => {
+      const msg = JSON.parse(evt.data);
+      if (msg.type === "room_users") {
+        setRoomUsers(msg.users);
+      }
+      // … handle chat / other types …
+    });
+  }, [socket]);
+
 
   // NEW: fetch logs on mount/roomId change
   useEffect(() => {
@@ -68,7 +79,6 @@ useEffect(() => {
   fetchRoomUsers();
 }, [roomId]);
 
-
     return <div style={{
         height: "100vh",
         overflow: "hidden",position: "relative" 
@@ -110,13 +120,13 @@ useEffect(() => {
 function Topbar({
   selectedTool,
   setSelectedTool,
-  roomUsers,
-  roomLeader
+  roomLeader,
+  roomUsers
 }: {
   selectedTool: Tool;
   setSelectedTool: (s: Tool) => void;
   roomLeader: { id: string; name: string } | null;
-  roomUsers: { id: string; name: string }[];
+   roomUsers: { id: string; name: string }[];
 }) {
   return (
     <div style={{ position: "fixed", top: 10, left: 10 }}>
@@ -165,6 +175,18 @@ function Topbar({
         </ul>
  
       </div>
+          <div style={{ marginTop: 16, background: "rgba(0,0,0,0.6)", padding: 8, borderRadius: 6, color: "#fff" }}>
+        <h4 style={{ margin: 0, marginBottom: 8, fontSize: 14, textAlign: "left" }}>USERS</h4>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {roomUsers.map(u => (
+            <li key={u.id} style={{ padding: "2px 0" }}>
+              • {u.name}
+            </li>
+          ))}
+          {roomUsers.length === 0 && <li style={{ fontStyle: "italic" }}>No users yet…</li>}
+        </ul>
+      </div>
+    
     </div>
   );
 }
