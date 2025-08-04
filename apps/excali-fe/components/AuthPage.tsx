@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { BACKEND_URL } from '@repo/backend-common/config';
 
 interface AuthPageProps {
     isSignin: boolean;
@@ -33,7 +34,7 @@ export function AuthPage({ isSignin }:  {
         try {
             if (isSignin) {
                 // Sign In Logic
-                const response = await fetch('http://localhost:3001/signin', {
+                const response = await fetch(`${BACKEND_URL}/signin`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -54,7 +55,7 @@ export function AuthPage({ isSignin }:  {
                 router.push('/dashboard'); // redirect to dashboard
             } else {
                 // Sign Up Logic
-                const response = await fetch('http://localhost:3001/signup', {
+                const response = await fetch(`${BACKEND_URL}/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

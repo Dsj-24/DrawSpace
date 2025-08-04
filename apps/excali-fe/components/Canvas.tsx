@@ -62,7 +62,7 @@ export function Canvas({
 useEffect(() => {
   const fetchRoomUsers = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/users/${roomId}`);
+      const res = await axios.get(`${BACKEND_URL}/users/${roomId}`);
       const users = res.data;
       console.log('API users response:', users);
       if (users && users.length > 0) {
