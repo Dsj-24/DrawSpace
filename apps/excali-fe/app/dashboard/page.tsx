@@ -2,6 +2,7 @@
 import React, { useState,useEffect } from 'react';
 import { PenTool, Users, Zap, ArrowRight, Plus } from 'lucide-react';
 import {useRouter} from 'next/navigation';
+import { BACKEND_URL } from '@repo/backend-common/config';
 import axios from 'axios';
 
 function Dashboard() {
@@ -24,7 +25,7 @@ function Dashboard() {
 const handleJoinSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const response = await axios.get(`http://localhost:3001/room/${joinRoomName}`);
+            const response = await axios.get(`${BACKEND_URL}/room/${joinRoomName}`);
             const room = response.data.room;
 
             if (!room) {
@@ -52,7 +53,7 @@ const handleJoinSubmit = async (e: React.FormEvent) => {
  try {
             const token = localStorage.getItem('token');
             console.log("Token:", token);
-            const response = await axios.post('http://localhost:3001/room',
+            const response = await axios.post(`${BACKEND_URL}/room`,
   { slug: createRoomName },
   {
     headers: {
