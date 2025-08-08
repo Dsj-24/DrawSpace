@@ -9,6 +9,7 @@ WORKDIR /usr/src/app
 
 # ENV Argument 
 ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
 
 # Copy monorepo metadata
 COPY ./pnpm-workspace.yaml ./pnpm-workspace.yaml
