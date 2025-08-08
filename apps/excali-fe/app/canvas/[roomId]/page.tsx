@@ -13,3 +13,5 @@ export default async function CanvasPage({ params }: {
 
  ) 
 }
+
+export const dynamic = 'force-dynamic'; // Ensures the page is always re-rendered
