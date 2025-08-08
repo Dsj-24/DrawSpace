@@ -21,4 +21,4 @@ jobs:
           context: .
           file: ./docker/Dockerfile.backend
           push: true
-          tags: 100xdevs/draw-app-backend:${{ github.sha }}
+          tags: dsj24/draw-app-backend:${{ github.sha }}

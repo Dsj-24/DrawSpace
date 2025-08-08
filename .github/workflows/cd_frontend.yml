@@ -23,5 +23,5 @@ jobs:
           build-args:
             - DATABASE_URL=${{ secrets.DATABASE_URL }}
           push: true
-          tags: 100xdevs/draw-app-frontend:${{ github.sha }}
+          tags: dsj24/draw-app-frontend:${{ github.sha }}
       ## Step to deploy this to a VM

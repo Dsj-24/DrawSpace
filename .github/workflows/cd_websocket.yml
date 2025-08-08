@@ -21,4 +21,4 @@ jobs:
           context: .
           file: ./docker/Dockerfile.websocket
           push: true
-          tags: 100xdevs/draw-app-websocket:${{ github.sha }}
+          tags: dsj24/draw-app-websocket:${{ github.sha }}
