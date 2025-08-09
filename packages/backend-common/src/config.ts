@@ -1,6 +1,6 @@
 export const JWT_SECRET="haha123";
-export const BACKEND_URL="http://localhost:3001";
-export const WS_URL="ws://localhost:8080";
+export const BACKEND_URL="http://ec2-15-206-82-179.ap-south-1.compute.amazonaws.com:3001";
+export const WS_URL="ws://ec2-15-206-82-179.ap-south-1.compute.amazonaws.com:8080";
 
 export const CANVAS_CONFIG = {
     width: 800,

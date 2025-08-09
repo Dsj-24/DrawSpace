@@ -35,3 +35,9 @@ jobs:
           push: true
           # Tag the image with the Docker Hub username, repository name, and the unique GitHub commit SHA
           tags: dsj24/draw-app-frontend:${{ github.sha }}
+
+      - name: Deploy to the VM
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
+          chmod 700 ~/ssh_key
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@15.206.82.179 -t "docker stop user_frontend && docker run --name user_frontend -d -p 3000:3000 dsj24/draw-app-frontend:${{ github.sha }}"      

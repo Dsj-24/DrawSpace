@@ -22,3 +22,9 @@ jobs:
           file: ./docker/Dockerfile.websocket
           push: true
           tags: dsj24/draw-app-websocket:${{ github.sha }}
+
+      - name: Deploy to the VM
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
+          chmod 700 ~/ssh_key
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@15.206.82.179 -t "docker stop user_websocket && docker run --name user_websocket -d -p 8080:8080 dsj24/draw-app-websocket:${{ github.sha }}"       
