@@ -30,8 +30,8 @@ jobs:
           context: .
           file: ./docker/Dockerfile.frontend
           # Pass build-time arguments, like the database URL
-          build-args:
-            - DATABASE_URL=${{ secrets.DATABASE_URL }}
+          build-args: |
+              DATABASE_URL=${{ secrets.DATABASE_URL }}
           push: true
           # Tag the image with the Docker Hub username, repository name, and the unique GitHub commit SHA
           tags: dsj24/draw-app-frontend:${{ github.sha }}
