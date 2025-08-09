@@ -1,27 +1,40 @@
+# Name of the workflow
 name: Deploy the frontend
+
+# Trigger the workflow on a push to the 'DockerDev' branch
 on:
   push:
     branches: [ DockerDev ]
+
+# A workflow run is made up of one or more jobs
 jobs: 
-  build:
+  # This job handles building and pushing the Docker image
+  build-and-push:
+    # Run this job on the latest version of Ubuntu
     runs-on: ubuntu-latest
+    
+    # A sequence of tasks to perform
     steps:
+      # Step to check out your repository code
       - name: Checkout the code
         uses: actions/checkout@v2
 
+      # Step to log in to Docker Hub using stored secrets
       - name: Docker login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      - name: Build and push 
+      # Step to build the Docker image from the specified Dockerfile and push it to Docker Hub
+      - name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./docker/Dockerfile.frontend
+          # Pass build-time arguments, like the database URL
           build-args:
             - DATABASE_URL=${{ secrets.DATABASE_URL }}
           push: true
+          # Tag the image with the Docker Hub username, repository name, and the unique GitHub commit SHA
           tags: dsj24/draw-app-frontend:${{ github.sha }}
-      ## Step to deploy this to a VM
