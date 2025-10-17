@@ -172,5 +172,15 @@ app.get("/users/:roomId", async (req: Request, res: Response) => {
   res.json(users);
 });
 
+app.get("/rooms/:roomId", async (req, res) => {
+    const roomId = Number(req.params.roomId);
+    const room =  await prismaClient.room.findFirst({
+        where: { id: roomId }
+    });
+
+    res.json({
+        room
+    });
+});
 
 app.listen(3001);

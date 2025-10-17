@@ -22,10 +22,11 @@ export function Canvas({
     const [game, setGame] = useState<Game>();
     const [selectedTool, setSelectedTool] = useState<Tool>("circle");
     const [roomLeader, setRoomLeader] = useState<{ id: string; name: string } | null>(null);
+    const [roomName, setRoomName] = useState<string>("");
     const [logs, setLogs] = useState<{ userName: string; shapeType: string }[]>([]);
-     const [roomUsers, setRoomUsers] = useState<{ id: string; name: string }[]>([]);
+    const [roomUsers, setRoomUsers] = useState<{ id: string; name: string }[]>([]);
 
-  useEffect(() => {
+useEffect(() => {
     socket.addEventListener("message", (evt) => {
       const msg = JSON.parse(evt.data);
       if (msg.type === "room_users") {
@@ -35,160 +36,302 @@ export function Canvas({
     });
   }, [socket]);
 
-
-  // NEW: fetch logs on mount/roomId change
-  useEffect(() => {
-    getUserLogs(roomId).then(setLogs).catch(console.error);
-  });
+    // Initial logs fetch (history) on room change
+    useEffect(() => {
+      getUserLogs(roomId).then(setLogs).catch(console.error);
+    });
 
     useEffect(() => {
         game?.setTool(selectedTool);
     }, [selectedTool, game]);
 
+    // Game init / teardown
     useEffect(() => {
-
         if (canvasRef.current) {
             const g = new Game(canvasRef.current, roomId, socket);
             setGame(g);
-
-            return () => {
-                g.destroy();
-            }
+            return () => { g.destroy(); }
         }
+    }, [canvasRef]); // keep ref stable; re-init when room/socket changes
 
+    // Fetch leader + room name
+    useEffect(() => {
+      const fetchRoomUsers = async () => {
+        try {
+          const res = await axios.get(`${BACKEND_URL}/users/${roomId}`);
+          const users = res.data;
+          console.log('API users response:', users);
+          if (users && users.length > 0) {
+            setRoomLeader(users[0]);
+            console.log('Set leader:', users[0]);
+          } else {
+            setRoomLeader(null);
+          }
+        } catch (error) {
+          console.error("Failed to fetch users", error);
+        }
+      };
 
-    }, [canvasRef]);
-    
-useEffect(() => {
-  const fetchRoomUsers = async () => {
-    try {
-      const res = await axios.get(`${BACKEND_URL}/users/${roomId}`);
-      const users = res.data;
-      console.log('API users response:', users);
-      if (users && users.length > 0) {
-        setRoomLeader(users[0]); // Set leader only
-        console.log('Set leader:', users[0]);
-      } else {
-        setRoomLeader(null);
-      }
-    } catch (error) {
-      console.error("Failed to fetch users", error);
-    }
-  };
+      const fetchRoomName = async () => {
+        try {
+          const res = await axios.get(`${BACKEND_URL}/rooms/${roomId}`);
+          // Hardened: accept {slug|name} at root OR {room: {slug|name}}
+          const data = res.data ?? {};
+          const rootName = data.slug || data.name;
+          const nested = data.room ?? {};
+          const nestedName = nested.slug || nested.name;
 
-  fetchRoomUsers();
-}, [roomId]);
+          const finalName = rootName || nestedName || "Room";
+          setRoomName(finalName);
+        } catch (error) {
+          console.error("Failed to fetch room name", error);
+          setRoomName("Room");
+        }
+      };
+
+      fetchRoomUsers();
+      fetchRoomName();
+    }, [roomId]);
 
     return <div style={{
         height: "100vh",
-        overflow: "hidden",position: "relative" 
+        overflow: "hidden",
+        position: "relative",
+        backgroundColor: "#1a1f2e"
     }}>
-        <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight}></canvas>
-        <Topbar setSelectedTool={setSelectedTool} selectedTool={selectedTool}  roomLeader={roomLeader} roomUsers={roomUsers} />
-        {/* NEW: the right-side LOGS panel */}
-      <div
-        style={{
-          position: "fixed",
-          top: "10%",
-          right: 10,
-          width: "220px",
-          maxHeight: "80%",
-          overflowY: "auto",
-          backgroundColor: "rgba(0,0,0,0.7)",
-          color: "#fff",
-          padding: "12px",
-          borderRadius: "8px",
-          zIndex: 20
-        }}
-      >
-        <h3 style={{ marginBottom: "8px", textAlign: "center" }}>LOGS</h3>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {logs.length > 0
-            ? logs.map((l, i) => (
-                <li key={i} style={{ marginBottom: "6px" }}>
-                  <strong>{l.userName}</strong> drew a <em>{l.shapeType}</em>
-                </li>
-              ))
-            : <li><em>No shapes yet…</em></li>
-          }
-        </ul>
-      </div>
-    </div>
-}
+        <canvas 
+          ref={canvasRef} 
+          width={window.innerWidth} 
+          height={window.innerHeight}
+          style={{ backgroundColor: "#2d3442" }}
+        ></canvas>
+        
+        {/* LEFT SIDEBAR */}
+        <div
+          style={{
+            position: "fixed",
+            top: 10,
+            left: 10,
+            width: "300px",
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            gap: 0,
+            zIndex: 30
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+              padding: "16px",
+              borderRadius: "12px",
+              color: "#fff",
+              backdropFilter: "blur(10px)",
+              marginBottom: "12px"
+            }}
+          >
+            <nav style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div style={{ 
+                width: "44px", 
+                height: "44px", 
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)", 
+                borderRadius: "10px", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center",
+                boxShadow: "0 8px 16px rgba(99, 102, 241, 0.3)"
+              }}>
+                <PenTool style={{ width: "24px", height: "24px", color: "white" }} />
+              </div>
+              <span style={{
+                fontSize: "24px",
+                fontWeight: "bold",
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+              }}>
+                DrawSpace
+              </span>
+            </nav>
 
-
-function Topbar({
-  selectedTool,
-  setSelectedTool,
-  roomLeader,
-  roomUsers
-}: {
-  selectedTool: Tool;
-  setSelectedTool: (s: Tool) => void;
-  roomLeader: { id: string; name: string } | null;
-   roomUsers: { id: string; name: string }[];
-}) {
-  return (
-    <div style={{ position: "fixed", top: 10, left: 10 }}>
-      <header className="relative z-10">
-        <nav className="flex items-center justify-between p-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <PenTool className="w-6 h-6 text-white" />
+            {/* Tools */}
+            <div style={{ display: "flex", gap: "8px" }}>
+              <IconButton
+                onClick={() => setSelectedTool("pencil")}
+                activated={selectedTool === "pencil"}
+                icon={<Pencil />}
+              />
+              <IconButton
+                onClick={() => setSelectedTool("rect")}
+                activated={selectedTool === "rect"}
+                icon={<RectangleHorizontalIcon />}
+              />
+              <IconButton
+                onClick={() => setSelectedTool("circle")}
+                activated={selectedTool === "circle"}
+                icon={<Circle />}
+              />
+              <IconButton
+                onClick={() => setSelectedTool("triangle")}
+                activated={selectedTool === "triangle"}
+                icon={<TriangleIcon />}
+              />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              DrawSpace
-            </span>
           </div>
-        </nav>
-      </header>
-      <div className="flex gap-2 mt-2">
-        <IconButton
-          onClick={() => setSelectedTool("pencil")}
-          activated={selectedTool === "pencil"}
-          icon={<Pencil />}
-        />
-        <IconButton
-          onClick={() => setSelectedTool("rect")}
-          activated={selectedTool === "rect"}
-          icon={<RectangleHorizontalIcon />}
-        />
-        <IconButton
-          onClick={() => setSelectedTool("circle")}
-          activated={selectedTool === "circle"}
-          icon={<Circle />}
-        />
-        <IconButton
-          onClick={() => setSelectedTool("triangle")}
-          activated={selectedTool === "triangle"}
-          icon={<TriangleIcon />}
-        />
-      </div>
 
-      {/* ✅ Show room users here */}
-      <div className="mt-4 text-white">
-        <h3 className="text-lg font-semibold mb-1">Creator of The Room</h3>
-        <ul className="text-md text-white ">
-          {roomLeader && (
-            <li key={roomLeader.id}>• {roomLeader.name}</li>
-          )}
-        </ul>
- 
-      </div>
-          <div style={{ marginTop: 16, background: "rgba(0,0,0,0.6)", padding: 8, borderRadius: 6, color: "#fff" }}>
-        <h4 style={{ margin: 0, marginBottom: 8, fontSize: 14, textAlign: "left" }}>USERS</h4>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {roomUsers.map(u => (
-            <li key={u.id} style={{ padding: "2px 0" }}>
-              • {u.name}
-            </li>
-          ))}
-          {roomUsers.length === 0 && <li style={{ fontStyle: "italic" }}>No users yet…</li>}
-        </ul>
-      </div>
-    
+          {/* Room Info Card */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.3)",
+              padding: "16px",
+              borderRadius: "12px",
+              color: "#fff",
+              backdropFilter: "blur(10px)",
+              marginBottom: "12px"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <div style={{ width: "10px", height: "10px", background: "#10b981", borderRadius: "50%" }}></div>
+              <span style={{ fontSize: "12px", fontWeight: "600", color: "#a0aec0", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Active Room
+              </span>
+            </div>
+            
+            <div style={{ marginBottom: "8px" }}>
+              <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "4px" }}>Room Name</span>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: "20px", 
+                fontWeight: "bold", 
+                background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                textTransform: "capitalize"
+              }}>
+                {roomName}
+              </h2>
+            </div>
+
+            <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(99, 102, 241, 0.2)" }}>
+              <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Creator</span>
+              <div style={{ fontSize: "14px", fontWeight: "500", color: "#e0e7ff" }}>
+                {roomLeader ? `• ${roomLeader.name}` : "Loading..."}
+              </div>
+            </div>
+          </div>
+
+          {/* Users Card */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.2)",
+              padding: "16px",
+              borderRadius: "12px",
+              color: "#fff",
+              backdropFilter: "blur(10px)",
+              marginBottom: 0
+            }}
+          >
+            <span style={{ fontSize: "11px", color: "#94a3b8", display: "block", marginBottom: "10px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Users In Room ({roomUsers.length})
+            </span>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {roomUsers.length > 0 ? (
+                roomUsers.map((u) => (
+                  <li 
+                    key={u.id} 
+                    style={{ 
+                      padding: "8px 0", 
+                      fontSize: "13px",
+                      color: "#e0e7ff",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}
+                  >
+                    <span style={{ width: "6px", height: "6px", background: "#10b981", borderRadius: "50%" }}></span>
+                    {u.name}
+                  </li>
+                ))
+              ) : (
+                <li style={{ fontStyle: "italic", color: "#94a3b8", fontSize: "13px" }}>No users yet…</li>
+              )}
+            </ul>
+          </div>
+
+          {/* BOTTOM CARD: Activity Logs with Fixed Header */}
+          <div
+            style={{
+              marginTop: "12px",
+              background: "linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.2)",
+              borderRadius: "12px",
+              color: "#fff",
+              backdropFilter: "blur(10px)",
+              flex: "1 1 auto",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden"
+            }}
+          >
+            {/* Fixed Header */}
+            <div
+              style={{
+                padding: "16px",
+                borderBottom: "1px solid rgba(99, 102, 241, 0.2)",
+                flex: "0 0 auto"
+              }}
+            >
+              <h3 style={{ 
+                margin: 0,
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "#94a3b8",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px"
+              }}>
+                Activity Logs
+              </h3>
+            </div>
+
+            {/* Scrollable Content */}
+            <ul style={{ 
+              listStyle: "none", 
+              padding: "16px", 
+              margin: 0,
+              overflowY: "auto",
+              flex: "1 1 auto"
+            }}>
+              {logs.length > 0
+                ? logs.map((l, i) => (
+                    <li 
+                      key={i} 
+                      style={{ 
+                        marginBottom: "10px",
+                        padding: "10px",
+                        backgroundColor: "rgba(99, 102, 241, 0.05)",
+                        borderLeft: "3px solid #6366f1",
+                        borderRadius: "4px",
+                        fontSize: "12px",
+                        lineHeight: "1.5"
+                      }}
+                    >
+                      <strong style={{ color: "#a78bfa" }}>{l.userName}</strong>
+                      <br />
+                      <span style={{ color: "#cbd5e1" }}>drew a <em style={{ color: "#60a5fa", fontStyle: "italic" }}>{l.shapeType}</em></span>
+                    </li>
+                  ))
+                : <li style={{ fontStyle: "italic", color: "#94a3b8", fontSize: "12px" }}>No shapes drawn yet…</li>
+              }
+            </ul>
+          </div>
+        </div>
     </div>
-  );
 }
 
 export async function getUserLogs(roomId: string) {
@@ -203,10 +346,3 @@ export async function getUserLogs(roomId: string) {
     };
   });
 }
-    
-    
-    {/* <IconButton 
-    onClick={() => setSelectedTool("text")}
-    activated={selectedTool === "text"}
-    icon={<TypeIcon />}  // you can choose any icon
-/> */}
