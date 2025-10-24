@@ -1,0 +1,34 @@
+# Use lightweight Node 20 Alpine image
+FROM node:20-alpine
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# ENV Argument 
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
+# Copy monorepo metadata
+COPY ./pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY ./pnpm-lock.yaml ./pnpm-lock.yaml
+COPY ./package.json ./package.json
+COPY ./turbo.json ./turbo.json
+
+# Copy packages and frontend app
+COPY ./packages ./packages
+COPY ./apps/excali-fe ./apps/excali-fe
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build the frontend app
+RUN cd apps/excali-fe && npm run build
+
+# Expose frontend port (e.g., Next.js or Vite default)
+EXPOSE 3000
+
+# Start the frontend app
+CMD ["pnpm", "run", "start:web"]

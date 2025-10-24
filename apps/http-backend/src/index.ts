@@ -7,14 +7,9 @@ import { JWT_SECRET } from '@repo/backend-common/config';
 import { CreateRoomSchema, CreateUserSchema, SignInSchema } from '@repo/common/types';
 import { prismaClient } from '@repo/db/client';
 
-
-
 const app = express();
-
-
 app.use(cors());
 app.use(express.json());
-
 
 app.post("/signup", async (req, res) => {
     const data = CreateUserSchema.safeParse(req.body);
@@ -82,10 +77,8 @@ app.post("/signin", async (req, res) => {
     return
 })
 
-
-
 app.post("/room", AuthMiddleware, async (req: Request, res: Response) => {
-    console.log("Received body:", req.body); 
+    console.log("Received body:", req.body);
     const data = CreateRoomSchema.safeParse(req.body);
     if (!data.success) {
         res.status(401).json({
@@ -94,24 +87,24 @@ app.post("/room", AuthMiddleware, async (req: Request, res: Response) => {
         return
     }
 
-    try{
-            //@ts-ignore
-    const userId = req.userId;
-    const newRoom = await prismaClient.room.create({
-        data: {
+    try {
+        //@ts-ignore
+        const userId = req.userId;
+        const newRoom = await prismaClient.room.create({
+            data: {
 
-            slug: req.body.slug,
-            adminId: userId
-        }
-    })
+                slug: req.body.slug,
+                adminId: userId
+            }
+        })
 
-    res.json({
-        id: newRoom.id,
-    })
-    } catch(e){
-    res.status(401).json({
-        message:"Room Name already exists"
-    })
+        res.json({
+            id: newRoom.id,
+        })
+    } catch (e) {
+        res.status(401).json({
+            message: "Room Name already exists"
+        })
     }
 
 })
@@ -134,18 +127,18 @@ app.get("/chats/:roomId", async (req, res) => {
             },
             take: 50
         });
-        
+
 
         res.json({
             messages,
         })
-    } catch(e) {
+    } catch (e) {
         console.log(e);
         res.json({
             messages: []
         })
     }
-    
+
 })
 
 app.get("/room/:slug", async (req, res) => {
@@ -162,19 +155,19 @@ app.get("/room/:slug", async (req, res) => {
 })
 
 app.get("/users/:roomId", async (req: Request, res: Response) => {
-  const roomId = Number(req.params.roomId);
+    const roomId = Number(req.params.roomId);
 
-  const users = await prismaClient.user.findMany({
-    where: { rooms: { some: { id: roomId } } },
-    select: { id: true, name: true }
-  });
+    const users = await prismaClient.user.findMany({
+        where: { rooms: { some: { id: roomId } } },
+        select: { id: true, name: true }
+    });
 
-  res.json(users);
+    res.json(users);
 });
 
 app.get("/rooms/:roomId", async (req, res) => {
     const roomId = Number(req.params.roomId);
-    const room =  await prismaClient.room.findFirst({
+    const room = await prismaClient.room.findFirst({
         where: { id: roomId }
     });
 
@@ -182,5 +175,49 @@ app.get("/rooms/:roomId", async (req, res) => {
         room
     });
 });
+
+app.delete("/shapes/:roomId/:shapeId", async (req, res) => {
+    const roomId = Number(req.params.roomId);
+    const shapeId = Number(req.params.shapeId);
+
+    if (!Number.isFinite(roomId) || !Number.isFinite(shapeId) || shapeId <= 0) {
+        res.status(400).json({ message: "Invalid roomId or shapeId" });
+    }
+
+    await prismaClient.chat.deleteMany({ where: { id: shapeId, roomId } });
+    res.json({ message: "Shape deleted" });
+});
+
+// PUT /shapes/:roomId/:shapeId
+app.put("/shapes/:roomId/:shapeId", async (req, res) => {
+  const roomId = Number(req.params.roomId);
+  const shapeId = Number(req.params.shapeId);
+  const { shape } = req.body ?? {};
+
+  if (!Number.isFinite(roomId) || !Number.isFinite(shapeId)) {
+    res.status(400).json({ message: "Invalid roomId or shapeId" });
+  }
+  if (!shape || typeof shape.type !== "string") {
+    res.status(400).json({ message: "Missing/invalid shape" });
+  }
+
+  // We store shapes as JSON string in Chat.message (like {"shape": {...}})
+  const payload = JSON.stringify({ shape });
+
+  try {
+    const r = await prismaClient.chat.updateMany({
+      where: { id: shapeId, roomId },
+      data: { message: payload }
+    });
+    if (r.count === 0) res.status(404).json({ message: "Shape not found" });
+
+    res.json({ message: "Shape updated" });
+  } catch (e) {
+    console.error("PUT /shapes error:", e);
+    res.status(500).json({ message: "Update failed" });
+  }
+});
+
+
 
 app.listen(3001);

@@ -26,10 +26,10 @@ function checkUser(token: string): string | null {
     }
 
     return decoded.userId;
-  } catch(e) {
+  } catch (e) {
     return null;
   }
-  
+
 }
 
 wss.on('connection', function connection(ws, request) {
@@ -75,57 +75,92 @@ wss.on('connection', function connection(ws, request) {
 
     console.log("message received")
     console.log(parsedData);
-
+    // ws-server.ts
     if (parsedData.type === "chat") {
       const roomId = parsedData.roomId;
       const message = parsedData.message;
+      const clientMsgId = parsedData.clientMsgId;   // <— carry through
 
-      await prismaClient.chat.create({
-        data: {
-          roomId: Number(roomId),
-          message,
-          userId
-        }
+      const chat = await prismaClient.chat.create({
+        data: { roomId: Number(roomId), message, userId }
       });
 
       users.forEach(user => {
         if (user.rooms.includes(roomId)) {
           user.ws.send(JSON.stringify({
             type: "chat",
-            message: message,
-            roomId
-          }))
+            id: chat.id,           // <— the DB id
+            roomId,
+            message,               // unchanged
+            clientMsgId            // <— echo back
+          }));
         }
-      })
+      });
     }
 
-    if (parsedData.type === "join_room" || parsedData.type === "leave_room") {
+    if (parsedData.type === "delete") {
+      const roomId = parsedData.roomId;         // same type you use for join_room
+      const shapeId = Number(parsedData.shapeId);
+      users.forEach(u => {
+        if (u.rooms.includes(roomId)) {
+          u.ws.send(JSON.stringify({
+            type: "delete",
+            roomId,
+            shapeId
+          }));
+        }
+      });
+    }
+
+if (parsedData.type === "update") {
   const roomId = parsedData.roomId;
+  const shapeId = Number(parsedData.shapeId);
+  const shape   = parsedData.shape;
 
-  // 1. figure out which userIds are now in this room
-  const memberIds = users
-    .filter(u => u.rooms.includes(roomId))
-    .map(u => u.userId);
+  // Optional alternative (do DB update via WS instead of REST):
+  // await prismaClient.chat.updateMany({ where: { id: shapeId, roomId: Number(roomId) }, data: { message: JSON.stringify({ shape }) } });
 
-  // 2. fetch their names from your users table
-  const members: { id: string; name: string }[] =
-    await prismaClient.user.findMany({
-      where: { id: { in: memberIds } },
-      select: { id: true, name: true },
-    });
-
-  // 3. push the updated list to everyone in that room
   users.forEach(u => {
     if (u.rooms.includes(roomId)) {
-      u.ws.send(
-        JSON.stringify({
-          type: "room_users",
-          users: members,
-        })
-      );
+      u.ws.send(JSON.stringify({
+        type: "update",
+        roomId,
+        shapeId,
+        shape
+      }));
     }
   });
 }
+
+
+
+    if (parsedData.type === "join_room" || parsedData.type === "leave_room") {
+      const roomId = parsedData.roomId;
+
+      // 1. figure out which userIds are now in this room
+      const memberIds = users
+        .filter(u => u.rooms.includes(roomId))
+        .map(u => u.userId);
+
+      // 2. fetch their names from your users table
+      const members: { id: string; name: string }[] =
+        await prismaClient.user.findMany({
+          where: { id: { in: memberIds } },
+          select: { id: true, name: true },
+        });
+
+      // 3. push the updated list to everyone in that room
+      users.forEach(u => {
+        if (u.rooms.includes(roomId)) {
+          u.ws.send(
+            JSON.stringify({
+              type: "room_users",
+              users: members,
+            })
+          );
+        }
+      });
+    }
 
   });
 

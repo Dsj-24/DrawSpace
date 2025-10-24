@@ -1,7 +1,6 @@
 "use client";
 
 import { WS_URL } from "@repo/backend-common/config";
-import { initDraw } from "@/draw";
 import { useEffect, useRef, useState } from "react";
 import { Canvas } from "./Canvas";
 import { useRouter } from "next/navigation";

@@ -1,0 +1,33 @@
+# Use lightweight Node 20 Alpine image
+FROM node:20-alpine
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy monorepo metadata
+COPY ./pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY ./pnpm-lock.yaml ./pnpm-lock.yaml
+COPY ./package.json ./package.json
+COPY ./turbo.json ./turbo.json
+
+# Copy packages and backend app
+COPY ./packages ./packages
+COPY ./apps/http-backend ./apps/http-backend
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Migrate and generate 
+RUN pnpm run db:migrate
+
+# Build the backend app
+RUN cd apps/http-backend && npm run build
+
+# Expose backend API port (common ports: 4000 or 5000)
+EXPOSE 3001
+
+# Start the backend app
+CMD ["pnpm", "run", "start:backend"]
