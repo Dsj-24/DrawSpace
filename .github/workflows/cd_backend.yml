@@ -1,0 +1,34 @@
+name: Deploy the backend
+on:
+  push:
+    branches: [ main ]
+jobs: 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push 
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/Dockerfile.backend
+          push: true
+          tags: dsj24/ds-backend:${{ github.sha }}
+
+      - name: Deploy to the VM
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
+          chmod 700 ~/ssh_key
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@15.206.82.179 -t "docker stop user_backend && docker rm user_backend && docker run --name user_backend -d -p 3001:3001 -e DATABASE_URL='${{ secrets.DATABASE_URL }}' dsj24/draw-app-backend:${{ github.sha }}"      
+
+
+
+          

@@ -1,0 +1,30 @@
+name: Deploy the websocket server
+on:
+  push:
+    branches: [ main ]
+jobs: 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push 
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/Dockerfile.websocket
+          push: true
+          tags: dsj24/ds-websocket:${{ github.sha }}
+
+      - name: Deploy to the VM
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
+          chmod 700 ~/ssh_key
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@15.206.82.179 -t "docker stop user_websocket && docker rm user_websocket && docker run --name user_websocket -d -p 8080:8080 -e DATABASE_URL='${{ secrets.DATABASE_URL }}' dsj24/draw-app-websocket:${{ github.sha }}"       
