@@ -40,4 +40,4 @@ jobs:
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
           chmod 700 ~/ssh_key
-          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@13.201.227.20 -t "docker stop user_frontend && docker rm user_frontend && docker run --name user_frontend -d -p 3000:3000 dsj24/ds-frontend:${{ github.sha }}"      
+          ssh -o StrictHostKeyChecking=no -i ~/ssh_key ubuntu@15.206.179.114 -t "docker stop user_frontend && docker rm user_frontend && docker run --name user_frontend -d -p 3000:3000 dsj24/ds-frontend:${{ github.sha }}"      
