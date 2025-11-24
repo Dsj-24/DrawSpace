@@ -117,9 +117,6 @@ if (parsedData.type === "update") {
   const shapeId = Number(parsedData.shapeId);
   const shape   = parsedData.shape;
 
-  // Optional alternative (do DB update via WS instead of REST):
-  // await prismaClient.chat.updateMany({ where: { id: shapeId, roomId: Number(roomId) }, data: { message: JSON.stringify({ shape }) } });
-
   users.forEach(u => {
     if (u.rooms.includes(roomId)) {
       u.ws.send(JSON.stringify({
