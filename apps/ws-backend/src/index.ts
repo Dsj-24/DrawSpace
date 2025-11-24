@@ -53,7 +53,7 @@ wss.on('connection', function connection(ws, request) {
   })
 
   ws.on('message', async function message(data) {
-    let parsedData;
+    let parsedData: { type: string; roomId: string; room: string; message: any; clientMsgId: any; shapeId: any; shape: any; };
     if (typeof data !== "string") {
       parsedData = JSON.parse(data.toString());
     } else {
